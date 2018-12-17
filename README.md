@@ -1,6 +1,6 @@
 # About
 
-Custom OAuth provider for Github
+OAuth provider for Netlify CMS.
 
 Reference for Github setup: https://developer.github.com/apps/building-oauth-apps
 
