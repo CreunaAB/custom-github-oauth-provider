@@ -1,4 +1,4 @@
-require('dotenv').config({ silent: true });
+require('dotenv').config();
 const simpleOauthModule = require('simple-oauth2');
 const randomString = require('randomstring');
 const express = require('express');
@@ -26,66 +26,76 @@ const authorizationUri = oauth2.authorizationCode.authorizeURL({
     state: randomString.generate(32)
 })
 
+const buildResponseScript = (content, state) => {
+    const script = `
+    <script>
+    (function() {
+      openerWindow = window.opener;
+
+      function recieveMessage(e) {
+        // send message to main window with da app
+        openerWindow.postMessage(
+          'authorization:${oauthProvider}:${state}:${JSON.stringify(content)}',
+          'http://localhost:3000'
+        )
+      }
+      window.addEventListener("message", recieveMessage, false)
+      // Start handshake with parent
+      openerWindow.postMessage("authorizing:${oauthProvider}", "*")    
+      })()
+    </script>`
+    
+    return script;
+}
+
 /* Initial page redirecting to Github */
 app.get('/auth', (req, res) => {
     res.redirect(authorizationUri);
 })
 
-app.get('/callback', (req, res) => {
-    const code = req.query.code;
+/* Create access token and send message back to main app */
+app.get('/callback', async (req, res) => {
+    const code = req.query.code
+    let content,
+        state,
+        script;
+    var options = {
+        code: code
+    }
 
-    const options = { code };
+    try {
+        const result = await oauth2.authorizationCode.getToken(options);
+        const token = oauth2.accessToken.create(result);
 
-    oauth2.authorizationCode.getToken(options, (err, result) => {
-        console.log('HERE');
-        
-        let mess, content;
-
-        if (err) {
-            mess = 'error';
-            content = JSON.stringify(err);
-        } else {
-            const token = oauth2.accessToken.create(result);
-            mess = 'success';
-            
-            content = {
-                token: token.token.access_token,
-                provider: oauth_provider
-            }
+        state = 'success';
+        content = {
+            token: token.token.access_token,
+            provider: oauthProvider
         }
+        script = buildResponseScript(content, state);
 
-        console.log('----CONTENT', content);
-        console.log('----OAUTH PROVIDER', oauthProvider);
-        
+        return res.send(script);
+    } catch (error) {
+        state = 'error';
+        content = JSON.stringify(error);
+        script = buildResponseScript(content, state);
 
-        const script = `
-        <script>
-        (function() {
-        function recieveMessage(e) {
-            console.log("recieveMessage %o", e)
-            // send message to main window with da app
-            window.opener.postMessage(
-            'authorization:${oauthProvider}:${mess}:${JSON.stringify(content)}',
-            e.origin
-            )
-        }
-        window.addEventListener("message", recieveMessage, false)
-        // Start handshare with parent
-        console.log("Sending message: %o", "${oauthProvider}")
-        window.opener.postMessage("authorizing:${oauthProvider}", "*")
-        })()
-        </script>`
-        return res.send(script)
-    });
+        return res.send(script);
+    }
 })
 
 app.get('/success', (req, res) => {
     res.send('');
 })
 
+/* For testing only */
 app.get('/', (req, res) => {
-    res.send('Hello<br><a href="/auth" target="' + loginAuthTarget + '">Log in with ' + oauthProvider.toUpperCase() + '</a>')
-})
+    res.send(`
+        Hello
+        <br />
+        <a href="/auth" target="${loginAuthTarget}">Log in with ${oauthProvider.toUpperCase}</a>
+    `)
+});
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => console.log(`OAuth app listening on port: ${PORT}`))
