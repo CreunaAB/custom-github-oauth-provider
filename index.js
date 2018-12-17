@@ -5,6 +5,7 @@ const express = require('express');
 const app = express();
 
 const oauthProvider = process.env.OAUTH_PROVIDER || 'github';
+const loginAuthTarget = process.env.AUTH_TARGET || '_self'
 
 const oauth2 = simpleOauthModule.create({
     client: {
@@ -36,6 +37,8 @@ app.get('/callback', (req, res) => {
     const options = { code };
 
     oauth2.authorizationCode.getToken(options, (err, result) => {
+        console.log('HERE');
+        
         let mess, content;
 
         if (err) {
@@ -56,31 +59,32 @@ app.get('/callback', (req, res) => {
         
 
         const script = `
-            <script>
-                (function () {
-                    function recieveMessage(e) {
-                        console.log('recieveMessage %o', e)
-                        // send message to main window === main app
-                        window.opener.postMessage(
-                            'authorization:${oauthProvider}:${mess}:${JSON.stringify(content)}',
-                            e.origin
-                        )
-                    }
-                    window.addEventListener('message', recieveMessage, false)
-                    
-                    // Handshake with parent
-                    console.log('Sending message: %o', '${oauthProvider}')
-                    window.opener.postMessage('authorizing:${oauthProvider}', '*')
-                })() 
-            </script>
-        `
-
+        <script>
+        (function() {
+        function recieveMessage(e) {
+            console.log("recieveMessage %o", e)
+            // send message to main window with da app
+            window.opener.postMessage(
+            'authorization:${oauthProvider}:${mess}:${JSON.stringify(content)}',
+            e.origin
+            )
+        }
+        window.addEventListener("message", recieveMessage, false)
+        // Start handshare with parent
+        console.log("Sending message: %o", "${oauthProvider}")
+        window.opener.postMessage("authorizing:${oauthProvider}", "*")
+        })()
+        </script>`
         return res.send(script)
     });
 })
 
 app.get('/success', (req, res) => {
     res.send('');
+})
+
+app.get('/', (req, res) => {
+    res.send('Hello<br><a href="/auth" target="' + loginAuthTarget + '">Log in with ' + oauthProvider.toUpperCase() + '</a>')
 })
 
 const PORT = process.env.PORT || 3001;
