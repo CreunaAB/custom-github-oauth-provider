@@ -89,7 +89,7 @@ app.get('/', (req, res) => {
     res.send(`
         Hello
         <br />
-        <a href="/auth" target="${loginAuthTarget}">Log in with ${oauthProvider.toUpperCase}</a>
+        <a href="/auth" target="${loginAuthTarget}">Log in with ${oauthProvider}</a>
     `)
 });
 
