@@ -30,18 +30,20 @@ app.get('/auth', (req, res) => {
     res.redirect(authorizationUri);
 })
 
-app.get('callback', (req, res) => {
+app.get('/callback', (req, res) => {
     const code = req.query.code;
 
     const options = { code };
 
     oauth2.authorizationCode.getToken(options, (err, result) => {
-        let content;
+        let mess, content;
 
         if (err) {
+            mess = 'error';
             content = JSON.stringify(err);
         } else {
             const token = oauth2.accessToken.create(result);
+            mess = 'success';
             
             content = {
                 token: token.token.access_token,
