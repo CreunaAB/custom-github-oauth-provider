@@ -84,10 +84,6 @@ app.get('/callback', async (req, res) => {
     }
 })
 
-app.get('/success', (req, res) => {
-    res.send('');
-})
-
 /* For testing only */
 app.get('/', (req, res) => {
     res.send(`
