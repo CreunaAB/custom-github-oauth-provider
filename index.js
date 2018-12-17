@@ -36,7 +36,7 @@ const buildResponseScript = (content, state) => {
         // send message to main window with da app
         openerWindow.postMessage(
           'authorization:${oauthProvider}:${state}:${JSON.stringify(content)}',
-          'http://localhost:3000'
+          e.origin
         )
       }
       window.addEventListener("message", recieveMessage, false)
