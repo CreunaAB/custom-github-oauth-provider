@@ -51,6 +51,10 @@ app.get('/callback', (req, res) => {
             }
         }
 
+        console.log('----CONTENT', content);
+        console.log('----OAUTH PROVIDER', oauthProvider);
+        
+
         const script = `
             <script>
                 (function () {
