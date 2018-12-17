@@ -37,4 +37,5 @@ backend:
   repo: user/repo   # Path to your Github repository
   branch: master    # Branch to update
   base_url: https://your.server.com # Path to this app
+  auth_endpoint: /auth
 ```
